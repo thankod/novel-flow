@@ -46,6 +46,7 @@ export default function App() {
     settingsOpen,
     libraryTab,
     inspectorTab,
+    mainTab,
     providerDrafts,
     settingsProvider,
     settingsFields,
@@ -64,6 +65,7 @@ export default function App() {
     setSettingsOpen,
     setLibraryTab,
     setInspectorTab,
+    setMainTab,
     setProviderDrafts,
     setSettingsProvider,
     setSettingsFields,
@@ -154,6 +156,7 @@ export default function App() {
       story.updatedAt = new Date().toISOString();
       return story;
     });
+    setMainTab("timeline");
   }
 
   async function generate(mode) {
@@ -211,6 +214,7 @@ export default function App() {
       }
 
       setStatus({ label: "生成完成", tone: "idle" });
+      setMainTab("timeline");
     } catch (error) {
       setStatus({ label: error.message || "生成失败", tone: "error" });
     } finally {
@@ -303,6 +307,7 @@ export default function App() {
     }));
     setStoryDraft(emptyStoryDraft);
     setStoryModalOpen(false);
+    setMainTab("timeline");
   }
 
   function createTemplateFromDraft() {
@@ -324,6 +329,8 @@ export default function App() {
     }));
     setTemplateDraft(emptyTemplateDraft);
     setTemplateModalOpen(false);
+    setMainTab("library");
+    setLibraryTab("templates");
   }
 
   function saveSettings(fields) {
@@ -347,6 +354,133 @@ export default function App() {
     return <div className="app-loading">正在加载工作区…</div>;
   }
 
+  const renderTimeline = () => (
+    <div className="timeline" ref={timelineRef}>
+      {activeStory ? activePath.map((node, index) => (
+        <article key={node.id} className={`timeline-node ${node.id === activeStory.activeNodeId ? "active" : ""}`}>
+          <div className="timeline-node-header">
+            <div>
+              <strong>节点 {index + 1}</strong>
+              <div className="node-meta">{node.generationKind}</div>
+            </div>
+            <span className="summary-label">{node.childrenIds.length} child</span>
+          </div>
+          <div className="node-content">{node.content}</div>
+          {node.instruction ? <div className="node-meta">指导意见：{node.instruction}</div> : null}
+          <div className="node-actions">
+            <button className="button button-ghost" onClick={() => updateActiveStory((story) => { story.activeNodeId = node.id; return story; })}>切到这里</button>
+          </div>
+        </article>
+      )) : <div className="empty-state">选中一个作品后开始写。</div>}
+
+      {activeStreamDraft ? (
+        <article className="timeline-node active">
+          <div className="timeline-node-header">
+            <div>
+              <strong>正在生成</strong>
+              <div className="node-meta">{activeStreamDraft.label}</div>
+            </div>
+            <span className="summary-label">流式输出</span>
+          </div>
+          <div className="node-content streaming-content">{activeStreamDraft.content || "…"}</div>
+        </article>
+      ) : null}
+    </div>
+  );
+
+  const renderLibrary = () => (
+    <>
+      <div className="segmented-control library-tabs">
+        <button className={`segment ${libraryTab === "stories" ? "active" : ""}`} onClick={() => setLibraryTab("stories")}>作品列表</button>
+        <button className={`segment ${libraryTab === "templates" ? "active" : ""}`} onClick={() => setLibraryTab("templates")}>模板资料库</button>
+      </div>
+
+      {libraryTab === "stories" ? (
+        <div className="story-list">
+          {appState.stories.length ? [...appState.stories].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map((story) => (
+            <button key={story.id} className={`story-item ${story.id === appState.activeStoryId ? "active" : ""}`} onClick={() => {
+              setAppState((current) => ({ ...current, activeStoryId: story.id }));
+              setMainTab("timeline");
+            }}>
+              <span className="story-item-title">{story.title}</span>
+              <span className="story-item-meta">{story.genre || "未设置题材"} · {story.nodes.length} 节点</span>
+            </button>
+          )) : <div className="empty-state">还没有作品。</div>}
+        </div>
+      ) : (
+        <div className="template-list">
+          {appState.templates.map((template) => (
+            <div className="template-item" key={template.id} style={{ padding: '12px', background: 'var(--panel-soft)', borderRadius: 'var(--radius-md)', border: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <strong className="template-item-title">{template.name}</strong>
+                <p className="template-item-meta" style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--muted)' }}>{template.style || "没有默认风格说明"}</p>
+              </div>
+              <button className="button button-ghost" onClick={() => applyTemplate(template.id)}>套用</button>
+            </div>
+          ))}
+          {!appState.templates.length && <div className="empty-state">还没有模板。</div>}
+        </div>
+      )}
+
+      <div className="library-utility">
+        <button className="button button-secondary" onClick={exportJson}>导出 JSON</button>
+        <button className="button button-secondary" onClick={exportMarkdown}>导出 Markdown</button>
+        <label className="button button-ghost file-label">
+          导入 JSON
+          <input hidden type="file" accept="application/json" onChange={importJson} />
+        </label>
+      </div>
+    </>
+  );
+
+  const renderInspector = () => (
+    <>
+      <div className="segmented-control inspector-tabs">
+        <button className={`segment ${inspectorTab === "setup" ? "active" : ""}`} onClick={() => setInspectorTab("setup")}>设定</button>
+        <button className={`segment ${inspectorTab === "branches" ? "active" : ""}`} onClick={() => setInspectorTab("branches")}>分支</button>
+        <button className={`segment ${inspectorTab === "memory" ? "active" : ""}`} onClick={() => setInspectorTab("memory")}>记忆</button>
+      </div>
+
+      {inspectorTab === "setup" ? (
+        activeStory ? <StoryForm story={activeStory} templates={appState.templates} onChange={(nextStory) => updateActiveStory(() => nextStory)} /> : <div className="empty-state">先创建一个作品。</div>
+      ) : null}
+      {inspectorTab === "branches" ? (
+        activeStory ? <StoryTree story={activeStory} activeNodeId={activeStory.activeNodeId} onSelect={(nodeId) => {
+          updateActiveStory((story) => { story.activeNodeId = nodeId; return story; });
+          setMainTab("timeline");
+        }} /> : <div className="empty-state">暂无分支。</div>
+      ) : null}
+      {inspectorTab === "memory" ? (
+        <div className="summary-list" ref={summaryRef}>
+          {activeSummaryDraft ? (
+            <article className="summary-item" style={{ padding: '16px', background: 'var(--panel-soft)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', marginBottom: '12px' }}>
+              <div className="summary-item-header">
+                <div>
+                  <strong>正在生成摘要</strong>
+                  <div className="summary-meta" style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>{activeSummaryDraft.label}</div>
+                </div>
+                <span className="summary-label">流式输出</span>
+              </div>
+              <div className="summary-content streaming-content">{activeSummaryDraft.content || "…"}</div>
+            </article>
+          ) : null}
+          {activeStory?.summaries.length ? [...activeStory.summaries].reverse().map((summary) => (
+            <article key={summary.id} className="summary-item" style={{ padding: '16px', background: 'var(--panel-soft)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', marginBottom: '12px' }}>
+              <div className="summary-item-header">
+                <div>
+                  <strong>{summary.title}</strong>
+                  <div className="summary-meta" style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>节点 {summary.nodeIndex}</div>
+                </div>
+                <span className="summary-label">{summary.source}</span>
+              </div>
+              <div className="summary-content" style={{ fontSize: '0.875rem', lineHeight: '1.6' }}>{summary.content}</div>
+            </article>
+          )) : <div className="empty-state">摘要会在这里累计。</div>}
+        </div>
+      ) : null}
+    </>
+  );
+
   return (
     <div className="site-frame">
       <main className="page-shell">
@@ -363,48 +497,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className="workspace-grid">
-          <aside className="rail rail-left">
-            <Panel title="资料库">
-              <div className="segmented-control library-tabs">
-                <button className={`segment ${libraryTab === "stories" ? "active" : ""}`} onClick={() => setLibraryTab("stories")}>作品</button>
-                <button className={`segment ${libraryTab === "templates" ? "active" : ""}`} onClick={() => setLibraryTab("templates")}>模板</button>
-              </div>
-
-              {libraryTab === "stories" ? (
-                <div className="story-list">
-                  {appState.stories.length ? [...appState.stories].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map((story) => (
-                    <button key={story.id} className={`story-item ${story.id === appState.activeStoryId ? "active" : ""}`} onClick={() => setAppState((current) => ({ ...current, activeStoryId: story.id }))}>
-                      <span className="story-item-title">{story.title}</span>
-                      <span className="story-item-meta">{story.genre || "未设置题材"} · {story.nodes.length} 节点</span>
-                    </button>
-                  )) : <div className="empty-state">还没有作品。</div>}
-                </div>
-              ) : (
-                <div className="template-list">
-                  {appState.templates.map((template) => (
-                    <div className="template-item" key={template.id}>
-                      <div>
-                        <strong className="template-item-title">{template.name}</strong>
-                        <p className="template-item-meta">{template.style || "没有默认风格说明"}</p>
-                      </div>
-                      <button className="button button-ghost" onClick={() => applyTemplate(template.id)}>套用</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="library-utility">
-                <button className="button button-secondary" onClick={exportJson}>导出 JSON</button>
-                <button className="button button-secondary" onClick={exportMarkdown}>导出 Markdown</button>
-                <label className="button button-ghost file-label">
-                  导入 JSON
-                  <input hidden type="file" accept="application/json" onChange={importJson} />
-                </label>
-              </div>
-            </Panel>
-          </aside>
-
+        <section className="workspace-grid" style={{ gridTemplateColumns: '1fr' }}>
           <section className="stage">
             <Panel
               title="续写控制"
@@ -421,7 +514,7 @@ export default function App() {
               <div className="stack-form">
                 <label>
                   给 AI 的指导意见
-                  <textarea rows="4" value={instruction} onChange={(event) => setInstruction(event.target.value)} placeholder="例如：拉高紧张感，不要解释设定，让主角在结尾做出违反直觉的决定。" />
+                  <textarea rows="3" value={instruction} onChange={(event) => setInstruction(event.target.value)} placeholder="例如：拉高紧张感，不要解释设定，让主角在结尾做出违反直觉的决定。" />
                 </label>
                 <div className="action-row">
                   <button className="button button-primary" disabled={!activeStory || isGenerating} onClick={() => generate("continue")}>继续</button>
@@ -431,85 +524,20 @@ export default function App() {
               </div>
             </Panel>
 
-            <Panel title="正文时间线">
-              <div className="timeline" ref={timelineRef}>
-                {activeStory ? activePath.map((node, index) => (
-                  <article key={node.id} className={`timeline-node ${node.id === activeStory.activeNodeId ? "active" : ""}`}>
-                    <div className="timeline-node-header">
-                      <div>
-                        <strong>节点 {index + 1}</strong>
-                        <div className="node-meta">{node.generationKind}</div>
-                      </div>
-                      <span className="summary-label">{node.childrenIds.length} child</span>
-                    </div>
-                    <div className="node-content">{node.content}</div>
-                    {node.instruction ? <div className="node-meta">指导意见：{node.instruction}</div> : null}
-                    <div className="node-actions">
-                      <button className="button button-ghost" onClick={() => updateActiveStory((story) => { story.activeNodeId = node.id; return story; })}>切到这里</button>
-                    </div>
-                  </article>
-                )) : <div className="empty-state">选中一个作品后开始写。</div>}
-
-                {activeStreamDraft ? (
-                  <article className="timeline-node active">
-                    <div className="timeline-node-header">
-                      <div>
-                        <strong>正在生成</strong>
-                        <div className="node-meta">{activeStreamDraft.label}</div>
-                      </div>
-                      <span className="summary-label">流式输出</span>
-                    </div>
-                    <div className="node-content streaming-content">{activeStreamDraft.content || "…"}</div>
-                  </article>
-                ) : null}
-              </div>
+            <Panel 
+              title={
+                <div className="segmented-control" style={{ marginBottom: 0, border: 'none', background: 'transparent', padding: 0 }}>
+                  <button className={`segment ${mainTab === "timeline" ? "active" : ""}`} onClick={() => setMainTab("timeline")} style={{ height: '32px', padding: '0 24px' }}>正文时间线</button>
+                  <button className={`segment ${mainTab === "library" ? "active" : ""}`} onClick={() => setMainTab("library")} style={{ height: '32px', padding: '0 24px' }}>资料库</button>
+                  <button className={`segment ${mainTab === "inspector" ? "active" : ""}`} onClick={() => setMainTab("inspector")} style={{ height: '32px', padding: '0 24px' }}>检查器</button>
+                </div>
+              }
+            >
+              {mainTab === "timeline" && renderTimeline()}
+              {mainTab === "library" && renderLibrary()}
+              {mainTab === "inspector" && renderInspector()}
             </Panel>
           </section>
-
-          <aside className="rail rail-right">
-            <Panel title="检查器">
-              <div className="segmented-control inspector-tabs">
-                <button className={`segment ${inspectorTab === "setup" ? "active" : ""}`} onClick={() => setInspectorTab("setup")}>设定</button>
-                <button className={`segment ${inspectorTab === "branches" ? "active" : ""}`} onClick={() => setInspectorTab("branches")}>分支</button>
-                <button className={`segment ${inspectorTab === "memory" ? "active" : ""}`} onClick={() => setInspectorTab("memory")}>记忆</button>
-              </div>
-
-              {inspectorTab === "setup" ? (
-                activeStory ? <StoryForm story={activeStory} templates={appState.templates} onChange={(nextStory) => updateActiveStory(() => nextStory)} /> : <div className="empty-state">先创建一个作品。</div>
-              ) : null}
-              {inspectorTab === "branches" ? (
-                activeStory ? <StoryTree story={activeStory} activeNodeId={activeStory.activeNodeId} onSelect={(nodeId) => updateActiveStory((story) => { story.activeNodeId = nodeId; return story; })} /> : <div className="empty-state">暂无分支。</div>
-              ) : null}
-              {inspectorTab === "memory" ? (
-                <div className="summary-list" ref={summaryRef}>
-                  {activeSummaryDraft ? (
-                    <article className="summary-item">
-                      <div className="summary-item-header">
-                        <div>
-                          <strong>正在生成摘要</strong>
-                          <div className="summary-meta">{activeSummaryDraft.label}</div>
-                        </div>
-                        <span className="summary-label">流式输出</span>
-                      </div>
-                      <div className="summary-content streaming-content">{activeSummaryDraft.content || "…"}</div>
-                    </article>
-                  ) : null}
-                  {activeStory?.summaries.length ? [...activeStory.summaries].reverse().map((summary) => (
-                    <article key={summary.id} className="summary-item">
-                      <div className="summary-item-header">
-                        <div>
-                          <strong>{summary.title}</strong>
-                          <div className="summary-meta">节点 {summary.nodeIndex}</div>
-                        </div>
-                        <span className="summary-label">{summary.source}</span>
-                      </div>
-                      <div className="summary-content">{summary.content}</div>
-                    </article>
-                  )) : <div className="empty-state">摘要会在这里累计。</div>}
-                </div>
-              ) : null}
-            </Panel>
-          </aside>
         </section>
       </main>
 
