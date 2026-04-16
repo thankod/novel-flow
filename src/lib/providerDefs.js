@@ -18,29 +18,70 @@ export const emptyProviderFields = {
   baseURL: "",
 };
 
+const KNOWN_MODELS = {
+  xai: [
+    "grok-4",
+    "grok-4-0709",
+    "grok-4.20-0309-reasoning",
+    "grok-4-1-fast-reasoning",
+    "grok-4.20-multi-agent-0309",
+    "grok-4.20-0309-non-reasoning",
+    "grok-4-1-fast-non-reasoning",
+  ],
+  anthropic: [
+    "claude-opus-4-20250514",
+    "claude-sonnet-4-20250514",
+    "claude-haiku-4-20250414",
+    "claude-3-5-sonnet-20241022",
+    "claude-3-5-haiku-20241022",
+  ],
+  mistral: [
+    "mistral-large-latest",
+    "mistral-medium-latest",
+    "mistral-small-latest",
+    "codestral-latest",
+    "open-mistral-nemo",
+  ],
+  deepseek: ["deepseek-chat", "deepseek-reasoner"],
+  groq: [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it",
+  ],
+  cohere: ["command-r-plus", "command-r", "command-light"],
+  perplexity: ["sonar-pro", "sonar", "sonar-deep-research"],
+  togetherai: [
+    "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+    "Qwen/Qwen2.5-72B-Instruct-Turbo",
+    "deepseek-ai/DeepSeek-R1",
+  ],
+};
+
 export const PROVIDERS = [
   {
     value: "google",
     label: "Google Gemini",
     keyPlaceholder: "AIza...",
     defaultModel: "gemini-2.5-flash",
-    presetModels: ["gemini-2.5-flash", "gemini-2.5-pro"],
+    presetModels: [],
     browserSupported: true,
   },
   {
     value: "anthropic",
     label: "Anthropic Claude",
     keyPlaceholder: "sk-ant-...",
-    defaultModel: "claude-3-5-sonnet-latest",
-    presetModels: ["claude-3-5-haiku-latest", "claude-3-5-sonnet-latest", "claude-3-7-sonnet-latest"],
+    defaultModel: "claude-sonnet-4-20250514",
+    presetModels: KNOWN_MODELS.anthropic,
     browserSupported: true,
   },
   {
     value: "openai",
     label: "OpenAI",
     keyPlaceholder: "sk-...",
-    defaultModel: "gpt-4o-mini",
-    presetModels: ["gpt-4o-mini", "gpt-4o", "gpt-4.1-mini", "gpt-4.1"],
+    defaultModel: "gpt-4o",
+    presetModels: [],
     browserSupported: true,
   },
   {
@@ -48,15 +89,15 @@ export const PROVIDERS = [
     label: "DeepSeek",
     keyPlaceholder: "sk-...",
     defaultModel: "deepseek-chat",
-    presetModels: ["deepseek-chat", "deepseek-reasoner"],
+    presetModels: KNOWN_MODELS.deepseek,
     browserSupported: true,
   },
   {
     value: "xai",
-    label: "xAI",
+    label: "xAI Grok",
     keyPlaceholder: "xai-...",
-    defaultModel: "grok-2-1212",
-    presetModels: ["grok-2-1212", "grok-2-vision-1212"],
+    defaultModel: "grok-4",
+    presetModels: KNOWN_MODELS.xai,
     browserSupported: true,
   },
   {
@@ -64,15 +105,15 @@ export const PROVIDERS = [
     label: "Groq",
     keyPlaceholder: "gsk_...",
     defaultModel: "llama-3.3-70b-versatile",
-    presetModels: ["llama-3.3-70b-versatile", "mixtral-8x7b-32768"],
+    presetModels: KNOWN_MODELS.groq,
     browserSupported: true,
   },
   {
     value: "mistral",
-    label: "Mistral",
+    label: "Mistral AI",
     keyPlaceholder: "",
     defaultModel: "mistral-large-latest",
-    presetModels: ["mistral-small-latest", "mistral-large-latest"],
+    presetModels: KNOWN_MODELS.mistral,
     browserSupported: true,
   },
   {
@@ -80,7 +121,7 @@ export const PROVIDERS = [
     label: "Cohere",
     keyPlaceholder: "",
     defaultModel: "command-r-plus",
-    presetModels: ["command-r", "command-r-plus"],
+    presetModels: KNOWN_MODELS.cohere,
     browserSupported: true,
   },
   {
@@ -88,10 +129,7 @@ export const PROVIDERS = [
     label: "Together AI",
     keyPlaceholder: "",
     defaultModel: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-    presetModels: [
-      "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-      "Qwen/Qwen2.5-72B-Instruct-Turbo",
-    ],
+    presetModels: KNOWN_MODELS.togetherai,
     browserSupported: true,
   },
   {
@@ -99,7 +137,7 @@ export const PROVIDERS = [
     label: "Perplexity",
     keyPlaceholder: "pplx-...",
     defaultModel: "sonar-pro",
-    presetModels: ["sonar", "sonar-pro"],
+    presetModels: KNOWN_MODELS.perplexity,
     browserSupported: true,
   },
   {
@@ -159,6 +197,7 @@ export function normalizeProviderValue(provider) {
     .replaceAll(/[^a-z0-9_/-]/g, "_");
 
   if (!value) return "openai_compatible";
+  if (value === "gemini") return "google";
   if (value === "openai-compatible") return "openai_compatible";
   return PROVIDERS.some((entry) => entry.value === value) ? value : "openai_compatible";
 }
@@ -267,6 +306,10 @@ export async function listProviderModels(modelConfig) {
   const provider = normalizeProviderValue(modelConfig.provider);
   const entry = getProviderEntry(provider);
 
+  if (KNOWN_MODELS[provider]?.length) {
+    return [...KNOWN_MODELS[provider]];
+  }
+
   if (provider === "openai" || provider === "openai_compatible") {
     const base = (modelConfig.baseURL || defaultBaseURLFor(provider)).replace(/\/$/, "");
     const response = await fetch(`${base}/models`, {
@@ -279,7 +322,24 @@ export async function listProviderModels(modelConfig) {
     }
     const json = await response.json();
     const models = Array.isArray(json.data) ? json.data.map((item) => item.id).filter(Boolean) : [];
-    return models.length ? models : entry.presetModels;
+    return models.length ? models.sort() : entry.presetModels;
+  }
+
+  if (provider === "google") {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(modelConfig.apiKey)}`,
+    );
+    if (!response.ok) {
+      throw new Error(`拉取模型列表失败：${response.status}`);
+    }
+    const json = await response.json();
+    const models = Array.isArray(json.models)
+      ? json.models
+          .filter((item) => Array.isArray(item.supportedGenerationMethods) && item.supportedGenerationMethods.includes("generateContent"))
+          .map((item) => String(item.name ?? "").replace(/^models\//, ""))
+          .filter(Boolean)
+      : [];
+    return models.sort();
   }
 
   if (entry.presetModels?.length) {
