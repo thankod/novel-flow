@@ -1,0 +1,45 @@
+import { create } from "zustand";
+import { emptyProviderFields } from "../lib/providerDefs";
+import { createDefaultState } from "../lib/storyState";
+
+export const useAppStore = create((set) => ({
+  appState: createDefaultState(),
+  loaded: false,
+  status: { label: "待命", tone: "idle" },
+  isGenerating: false,
+  instruction: "",
+  streamDraft: null,
+  summaryDraft: null,
+  storyModalOpen: false,
+  templateModalOpen: false,
+  settingsOpen: false,
+  libraryTab: "stories",
+  inspectorTab: "setup",
+  providerDrafts: {},
+  settingsProvider: "openai_compatible",
+  settingsFields: emptyProviderFields,
+  settingsModelOptions: null,
+  settingsTestResult: null,
+  settingsBusy: { testing: false, listing: false, saving: false },
+  setAppState: (updater) =>
+    set((state) => ({
+      appState: typeof updater === "function" ? updater(state.appState) : updater,
+    })),
+  setLoaded: (loaded) => set({ loaded }),
+  setStatus: (status) => set({ status }),
+  setIsGenerating: (isGenerating) => set({ isGenerating }),
+  setInstruction: (instruction) => set({ instruction }),
+  setStreamDraft: (streamDraft) => set({ streamDraft }),
+  setSummaryDraft: (summaryDraft) => set({ summaryDraft }),
+  setStoryModalOpen: (storyModalOpen) => set({ storyModalOpen }),
+  setTemplateModalOpen: (templateModalOpen) => set({ templateModalOpen }),
+  setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
+  setLibraryTab: (libraryTab) => set({ libraryTab }),
+  setInspectorTab: (inspectorTab) => set({ inspectorTab }),
+  setProviderDrafts: (providerDrafts) => set({ providerDrafts }),
+  setSettingsProvider: (settingsProvider) => set({ settingsProvider }),
+  setSettingsFields: (settingsFields) => set({ settingsFields }),
+  setSettingsModelOptions: (settingsModelOptions) => set({ settingsModelOptions }),
+  setSettingsTestResult: (settingsTestResult) => set({ settingsTestResult }),
+  setSettingsBusy: (settingsBusy) => set((state) => ({ settingsBusy: { ...state.settingsBusy, ...settingsBusy } })),
+}));
