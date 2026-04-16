@@ -80,6 +80,17 @@ export function SettingsModal({
         ...fields,
       });
       onModelOptionsChange(models);
+      if (models.length) {
+        const nextModel = models.includes(fields.model) ? fields.model : models[0];
+        onFieldsChange({
+          ...fields,
+          model: nextModel,
+        });
+      }
+      onTestResultChange({
+        success: true,
+        message: `已加载 ${models.length} 个可选模型`,
+      });
     } catch (error) {
       onModelOptionsChange(entry.presetModels?.length ? entry.presetModels : null);
       onTestResultChange({ success: false, message: error.message || String(error) });
@@ -155,30 +166,6 @@ export function SettingsModal({
             />
           )}
         </label>
-
-        <div className="inline-fields">
-          <label>
-            Temperature
-            <input
-              type="number"
-              min="0"
-              max="2"
-              step="0.1"
-              value={activeStory?.model.temperature ?? 0.9}
-              onChange={() => {}}
-              disabled
-            />
-          </label>
-          <label>
-            Max Tokens
-            <input
-              type="number"
-              value={activeStory?.model.maxTokens ?? 900}
-              onChange={() => {}}
-              disabled
-            />
-          </label>
-        </div>
 
         <div className="action-row">
           <button className="button button-secondary" onClick={handleListModels} disabled={busy.listing || !entry.browserSupported}>
