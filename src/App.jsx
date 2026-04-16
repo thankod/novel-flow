@@ -365,7 +365,7 @@ export default function App() {
 
         <section className="workspace-grid">
           <aside className="rail rail-left">
-            <Panel label="Library" title="资料库">
+            <Panel title="资料库">
               <div className="segmented-control library-tabs">
                 <button className={`segment ${libraryTab === "stories" ? "active" : ""}`} onClick={() => setLibraryTab("stories")}>作品</button>
                 <button className={`segment ${libraryTab === "templates" ? "active" : ""}`} onClick={() => setLibraryTab("templates")}>模板</button>
@@ -407,7 +407,6 @@ export default function App() {
 
           <section className="stage">
             <Panel
-              label="Writing Surface"
               title="续写控制"
               actions={
                 <div className="topbar-actions">
@@ -432,7 +431,7 @@ export default function App() {
               </div>
             </Panel>
 
-            <Panel label="Current Branch" title="正文时间线">
+            <Panel title="正文时间线">
               <div className="timeline" ref={timelineRef}>
                 {activeStory ? activePath.map((node, index) => (
                   <article key={node.id} className={`timeline-node ${node.id === activeStory.activeNodeId ? "active" : ""}`}>
@@ -468,7 +467,7 @@ export default function App() {
           </section>
 
           <aside className="rail rail-right">
-            <Panel label="Inspector" title="检查器">
+            <Panel title="检查器">
               <div className="segmented-control inspector-tabs">
                 <button className={`segment ${inspectorTab === "setup" ? "active" : ""}`} onClick={() => setInspectorTab("setup")}>设定</button>
                 <button className={`segment ${inspectorTab === "branches" ? "active" : ""}`} onClick={() => setInspectorTab("branches")}>分支</button>
@@ -534,7 +533,7 @@ export default function App() {
       />
 
       {storyModalOpen ? (
-        <Modal label="Create Story" title="新建作品" onClose={() => setStoryModalOpen(false)}>
+        <Modal title="新建作品" onClose={() => setStoryModalOpen(false)}>
           <label>标题<input value={storyDraft.title} onChange={(event) => setStoryDraft((draft) => ({ ...draft, title: event.target.value }))} /></label>
           <label>题材 / 风格<input value={storyDraft.genre} onChange={(event) => setStoryDraft((draft) => ({ ...draft, genre: event.target.value }))} /></label>
           <label>套用模板<select value={storyDraft.templateId} onChange={(event) => setStoryDraft((draft) => ({ ...draft, templateId: event.target.value }))}><option value="">不使用模板</option>{appState.templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
@@ -547,7 +546,7 @@ export default function App() {
       ) : null}
 
       {templateModalOpen ? (
-        <Modal label="Create Template" title="新建模板" onClose={() => setTemplateModalOpen(false)}>
+        <Modal title="新建模板" onClose={() => setTemplateModalOpen(false)}>
           <label>模板名<input value={templateDraft.name} onChange={(event) => setTemplateDraft((draft) => ({ ...draft, name: event.target.value }))} /></label>
           <label>默认系统 Prompt<textarea rows="5" value={templateDraft.systemPrompt} onChange={(event) => setTemplateDraft((draft) => ({ ...draft, systemPrompt: event.target.value }))} /></label>
           <label>默认世界观<textarea rows="4" value={templateDraft.world} onChange={(event) => setTemplateDraft((draft) => ({ ...draft, world: event.target.value }))} /></label>

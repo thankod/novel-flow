@@ -108,7 +108,7 @@ export function SettingsModal({
   }
 
   return (
-    <Modal label="Model Settings" title="模型设置" onClose={onClose}>
+    <Modal title="模型设置" onClose={onClose}>
       <div className="stack-form">
         <label>
           Provider
