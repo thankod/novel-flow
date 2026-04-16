@@ -104,8 +104,7 @@ export default function App() {
   };
 
   const openSettings = () => {
-    if (!activeStory) return;
-    const config = migrateModelConfig(activeStory.model);
+    const config = activeStory ? migrateModelConfig(activeStory.model) : appState.globalModel;
     const provider = normalizeProviderValue(config.provider);
     setSettings({
       provider,
@@ -272,6 +271,9 @@ export default function App() {
               <div className="status-dot" />
               <span>{status.label}</span>
             </div>
+            <button className="button button-ghost button-icon" title="系统设置" onClick={openSettings}>
+              <Settings size={18} />
+            </button>
             {activeStory && (
               <button className="button button-ghost button-icon" style={{ color: 'var(--danger)' }} title="删除作品" onClick={() => {
                 if (confirm("确认删除当前作品吗？不可撤销。")) {
@@ -426,10 +428,16 @@ export default function App() {
         onTestResultChange={r => setSettings({ testResult: r })}
         onBusyChange={b => setSettings({ busy: { ...settings.busy, ...b } })}
         onSave={(f) => {
-          updateActiveStory(s => {
-            s.model = { ...s.model, ...f };
-            return s;
-          });
+          if (activeStory) {
+            updateActiveStory(s => {
+              s.model = { ...s.model, ...f };
+              return s;
+            });
+          }
+          setAppState(curr => ({
+            ...curr,
+            globalModel: { ...curr.globalModel, ...f }
+          }));
           updateModal("settings", false);
           setStatus("设置已保存", "idle");
         }}
@@ -443,7 +451,7 @@ export default function App() {
             <label>开场提示词<textarea rows="4" value={storyDraft.openingPrompt} onChange={e => setStoryDraft({...storyDraft, openingPrompt: e.target.value})} placeholder="描述故事的起点，AI 将基于此生成第一段..." /></label>
             <div style={{ marginTop: '12px' }}>
               <button className="button button-primary" style={{ width: '100%' }} onClick={() => {
-                const story = createEmptyStory(storyDraft);
+                const story = createEmptyStory({ ...storyDraft, model: appState.globalModel });
                 setAppState(curr => ({ ...curr, stories: [story, ...curr.stories], activeStoryId: story.id }));
                 setStoryDraft(emptyStoryDraft);
                 updateModal("story", false);

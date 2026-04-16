@@ -41,6 +41,7 @@ export function createDefaultState() {
     ],
     stories: [],
     activeStoryId: null,
+    globalModel: migrateModelConfig({}),
   };
 }
 
@@ -162,5 +163,6 @@ export function migrateState(state) {
     templates,
     stories,
     activeStoryId: state?.activeStoryId ?? stories[0]?.id ?? null,
+    globalModel: migrateModelConfig(state?.globalModel ?? {}),
   };
 }
