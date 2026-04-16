@@ -393,7 +393,6 @@ export default function App() {
                 <textarea 
                   ref={textareaRef}
                   rows="1"
-                  placeholder="在此输入指导意见 (如：加快节奏，不要解释背景)..."
                   value={ui.instruction}
                   onChange={(e) => setUI({ instruction: e.target.value })}
                   onKeyDown={(e) => {

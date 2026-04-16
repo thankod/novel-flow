@@ -232,7 +232,7 @@ label {
 
 /* Bottom Generation Bar */
 .bottom-bar {
-  position: fixed;
+  position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
@@ -277,7 +277,7 @@ label {
 .writing-box-input textarea {
   background: transparent;
   border: none;
-  padding: 0;
+  padding: 4px 6px;
   font-size: 15px;
   line-height: 1.5;
   resize: none;
